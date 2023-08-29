@@ -1,0 +1,34 @@
+(define (domain cake)
+  (:requirements :strips :negative-preconditions)
+  (:predicates
+    (have ?c)
+    (eaten ?c)
+    (dirty)
+  )
+  (:action eat
+      :parameters (?c)
+      :precondition (have ?c)
+      :effect (and
+          (not (have ?c))
+          (eaten ?c)
+      )
+  )
+  (:action bake
+      :parameters (?c)
+      :precondition (and 
+        (not (have ?c))
+        (not (dirty))
+      )
+      :effect (and
+        (have ?c)
+        (dirty)
+      )
+  )
+
+  (:action clean
+      :parameters (?c)
+      :precondition ()
+      :effect (not (dirty))
+  )
+  
+)
