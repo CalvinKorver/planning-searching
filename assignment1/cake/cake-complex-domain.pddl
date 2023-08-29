@@ -1,4 +1,4 @@
-(define (domain cake)
+(define (domain cake1)
   (:requirements :strips :negative-preconditions)
   (:predicates
     (have ?c)
