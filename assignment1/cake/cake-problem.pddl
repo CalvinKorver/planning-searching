@@ -1,5 +1,5 @@
 (define (problem have-cake-eat-cake)
-  (:domain cake1)
+  (:domain cake)
   (:objects cake)
   (:init  )
   (:goal (and (have cake) (eaten cake)))
