@@ -64,37 +64,37 @@ class TestSearch:
 
         assert board.decode_state == ref_state
 
-    # def test_generate_actions(self):
-    #     sim = GameSimulator(None)
-    #     generated_actions = sim.generate_valid_actions(0)
-    #     assert (0,6) not in generated_actions
-    #     assert (4,0) not in generated_actions
+    def test_generate_actions(self):
+        sim = GameSimulator(None)
+        generated_actions = sim.generate_valid_actions(0)
+        assert (0,6) not in generated_actions
+        assert (4,0) not in generated_actions
 
-    # ## NOTE: You are highly encouraged to add failing test cases here
-    # ## in order to test your validate_action implementation. To add an
-    # ## invalid action, fill in the action tuple, the player_idx, the
-    # ## validity boolean (would be False for invalid actions), and a
-    # ## unique portion of the descriptive error message that your raised
-    # ## ValueError should return. For example, if you raised:
-    # ## ValueError("Cannot divide by zero"), then you would pass some substring
-    # ## of that description for val_msg.
-    # @pytest.mark.parametrize("action,player,is_valid,val_msg", [
-    #     ((0,14), 0, True, ""),
-    #     ((0,16), 0, True, ""),
-    #     ((0,10), 0, True, ""),
-    #     ((5,1), 0, True, ""),
-    #     ((5,2), 0, True, ""),
-    #     ((5,4), 0, True, ""),
-    #     ((5,5), 0, True, ""),
-    # ])
-    # def test_validate_action(self, action, player, is_valid, val_msg):
-    #     sim = GameSimulator(None)
-    #     if is_valid:
-    #         assert sim.validate_action(action, player) == is_valid
-    #     else:
-    #         with pytest.raises(ValueError) as exinfo:
-    #             result = sim.validate_action(action, player)
-    #         assert val_msg in str(exinfo.value)
+    ## NOTE: You are highly encouraged to add failing test cases here
+    ## in order to test your validate_action implementation. To add an
+    ## invalid action, fill in the action tuple, the player_idx, the
+    ## validity boolean (would be False for invalid actions), and a
+    ## unique portion of the descriptive error message that your raised
+    ## ValueError should return. For example, if you raised:
+    ## ValueError("Cannot divide by zero"), then you would pass some substring
+    ## of that description for val_msg.
+    @pytest.mark.parametrize("action,player,is_valid,val_msg", [
+        ((0,14), 0, True, ""),
+        ((0,16), 0, True, ""),
+        ((0,10), 0, True, ""),
+        ((5,1), 0, True, ""),
+        ((5,2), 0, True, ""),
+        ((5,4), 0, True, ""),
+        ((5,5), 0, True, ""),
+    ])
+    def test_validate_action(self, action, player, is_valid, val_msg):
+        sim = GameSimulator(None)
+        if is_valid:
+            assert sim.validate_action(action, player) == is_valid
+        else:
+            with pytest.raises(ValueError) as exinfo:
+                result = sim.validate_action(action, player)
+            assert val_msg in str(exinfo.value)
         
 
     @pytest.mark.parametrize("state,is_term", [

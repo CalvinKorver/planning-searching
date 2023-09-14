@@ -200,15 +200,6 @@ class Rules:
         else:
             return False
 
-        # Todo: We still need to check if there is a blocking
-
-        # for i in range(bs.N_COLS):  # The max we could traverse is the num cols minus 1
-        #     up_right    = ball_col + i, ball_row + i
-        #     down_right  = ball_col + i, ball_row - i
-        #     up_left     = ball_col - i, ball_row + i
-        #     down_left   = ball_col + i, ball_row - i
-        #     for col_option, row_option in [up_right,down_right,up_left,down_left]:
-
     @staticmethod
     def single_ball_actions(board_state, player_idx):
         """
@@ -257,7 +248,6 @@ class Rules:
                 break
             else:
                 legal_moves = new_legal_moves
-
 
         return set(board_state.encode_single_pos((col, row)) for col, row in legal_moves)
 
@@ -336,10 +326,21 @@ class GameSimulator:
               piece in the boardstate can be obtained, so relative_idx is the index relative to current player's
               pieces. Pieces with relative index 0,1,2,3,4 are block pieces that like knights in chess, and
               relative index 5 is the player's ball piece.
-            
-        TODO: You need to implement this.
         """
-        raise NotImplementedError("TODO: Implement this function")
+        # Gets the correct indices depending on the player idx
+        indices = [i for i in range(5)] if player_idx == 0 else [i for i in range(6, 11)]
+
+        pieces_actions = [Rules.single_piece_actions(self.game_state, i) for i in indices]
+
+        all_actions = set()
+        for i, actions in enumerate(pieces_actions):
+            for action in actions:
+                all_actions.add((i, action))
+
+        for ball_action in Rules.single_ball_actions(self.game_state, player_idx):
+            all_actions.add((5, ball_action))
+
+        return all_actions
 
     def validate_action(self, action: tuple, player_idx: int):
         """
@@ -353,14 +354,15 @@ class GameSimulator:
         Output:
             - if the action is valid, return True
             - if the action is not valid, raise ValueError
-        
-        TODO: You need to implement this.
+
         """
-        if False:
+        valid_actions = self.generate_valid_actions(player_idx)
+        if action in valid_actions:
+            return True
+        else:
             raise ValueError(
                 "For each case that an action is not valid, specify the reason that the action is not valid in this ValueError.")
-        if True:
-            return True
+
 
     def update(self, action: tuple, player_idx: int):
         """
