@@ -164,7 +164,7 @@ class GameStateProblem(Problem):
 
     def backtrack(self, nodes):
         result = []
-
+g
         for i in range(1, len(nodes)):
             current_state, current_player = nodes[i]
             previous_state, previous_player = nodes[i - 1]
