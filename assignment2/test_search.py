@@ -5,53 +5,53 @@ from game import BoardState, GameSimulator, Rules
 from search import GameStateProblem
 
 class TestSearch:
-    #
-    # def test_game_state_goal_state(self):
-    #     b1 = BoardState()
-    #     gsp = GameStateProblem(b1, b1, 0)
-    #
-    #     sln = gsp.search_alg_fnc()
-    #     ref = [(tuple((tuple(b1.state), 0)), None)]
-    #
-    #     assert sln == ref
-    #
-    # ## NOTE: If you'd like to test multiple variants of your algorithms, enter their keys below
-    # ## in the parametrize function. Your set_search_alg should then set the correct method to
-    # ## use.
-    # @pytest.mark.parametrize("alg", ["", ""])
-    # def test_game_state_problem(self, alg):
-    #     """
-    #     Tests search based planning
-    #     """
-    #     b1 = BoardState()
-    #     b2 = BoardState()
-    #     b2.update(0, 14)
-    #
-    #     gsp = GameStateProblem(b1, b2, 0)
-    #     gsp.set_search_alg(alg)
-    #     sln = gsp.search_alg_fnc()
-    #
-    #     ## Single Step
-    #     ref = [(tuple((tuple(b1.state), 0)), (0, 14)), (tuple((tuple(b2.state), 1)), None)]
-    #     assert sln == ref
-    #
-    #     b2 = BoardState()
-    #     b2.update(0, 23)
-    #
-    #     gsp = GameStateProblem(b1, b2, 0)
-    #     gsp.set_search_alg(alg)
-    #     sln = gsp.search_alg_fnc()
-    #
-    #     ## Two Step:
-    #     ## (0, 14) or (0, 10) -> (any) -> (0, 23) -> (undo any) -> (None, goal state)
-    #
-    #     #print(gsp.goal_state_set)
-    #     #print(sln)
-    #     assert len(sln) == 5 ## Player 1 needs to move once, then move the piece back
-    #     assert sln[0] == (tuple((tuple(b1.state), 0)), (0, 14)) or sln[0] == (tuple((tuple(b1.state), 0)), (0, 10))
-    #     assert sln[1][0][1] == 1
-    #     assert sln[2][1] == (0, 23)
-    #     assert sln[4] == (tuple((tuple(b2.state), 0)), None)
+
+    def test_game_state_goal_state(self):
+        b1 = BoardState()
+        gsp = GameStateProblem(b1, b1, 0)
+
+        sln = gsp.search_alg_fnc()
+        ref = [(tuple((tuple(b1.state), 0)), None)]
+
+        assert sln == ref
+
+    # NOTE: If you'd like to test multiple variants of your algorithms, enter their keys below
+    # in the parametrize function. Your set_search_alg should then set the correct method to
+    # use.
+    @pytest.mark.parametrize("alg", ["", ""])
+    def test_game_state_problem(self, alg):
+        """
+        Tests search based planning
+        """
+        b1 = BoardState()
+        b2 = BoardState()
+        b2.update(0, 14)
+
+        gsp = GameStateProblem(b1, b2, 0)
+        gsp.set_search_alg(alg)
+        sln = gsp.search_alg_fnc()
+        #
+        ## Single Step
+        ref = [(tuple((tuple(b1.state), 0)), (0, 14)), (tuple((tuple(b2.state), 1)), None)]
+        assert sln == ref
+
+        b2 = BoardState()
+        b2.update(0, 23)
+
+        gsp = GameStateProblem(b1, b2, 0)
+        gsp.set_search_alg(alg)
+        sln = gsp.search_alg_fnc()
+
+        ## Two Step:
+        ## (0, 14) or (0, 10) -> (any) -> (0, 23) -> (undo any) -> (None, goal state)
+        print()
+        print(gsp.goal_state_set)
+        print(sln)
+        assert len(sln) == 5 ## Player 1 needs to move once, then move the piece back
+        assert sln[0] == (tuple((tuple(b1.state), 0)), (0, 14)) or sln[0] == (tuple((tuple(b1.state), 0)), (0, 10))
+        assert sln[1][0][1] == 1
+        assert sln[2][1] == (0, 23)
+        assert sln[4] == (tuple((tuple(b2.state), 0)), None)
 
     def test_initial_state(self):
         """
@@ -69,6 +69,9 @@ class TestSearch:
         generated_actions = sim.generate_valid_actions(0)
         assert (0,6) not in generated_actions
         assert (4,0) not in generated_actions
+
+        generated_actions = sim.generate_valid_actions(1)
+        assert (7,0) not in generated_actions
 
     ## NOTE: You are highly encouraged to add failing test cases here
     ## in order to test your validate_action implementation. To add an

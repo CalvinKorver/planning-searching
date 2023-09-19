@@ -118,14 +118,11 @@ class Rules:
 
         Output: an iterable (set or list or tuple) of integers which indicate the encoded positions
             that piece_idx can move to during this turn.
-        
-        TODO: You need to implement this.
         """
 
         # Rule 1: A block can only be moved if it is not holding a ball
-        if piece_idx in [board_state.state[board_state.white_ball_index],
-                         board_state.state[board_state.black_ball_index]]:
-            return []
+        if piece_idx == board_state.white_ball_index or piece_idx == board_state.black_ball_index:
+            raise ValueError("A block can only be moved if it is not holding a ball!")
 
         col_0, row_0 = board_state.decode_state[piece_idx]  # Gets the col,row of the piece we care about
 
@@ -159,10 +156,12 @@ class Rules:
     def find_team_pieces(board_state, player_idx):
         if player_idx == 0:
             l = set(board_state.decode_state[:board_state.white_ball_index])
-            l.remove(board_state.decode_state[board_state.white_ball_index])
+            if board_state.decode_state[board_state.white_ball_index] in l:
+                l.remove(board_state.decode_state[board_state.white_ball_index])
         else:
             l = set(board_state.decode_state[board_state.white_ball_index + 1:board_state.black_ball_index])
-            l.remove(board_state.decode_state[board_state.black_ball_index])
+            if board_state.decode_state[board_state.black_ball_index] in l:
+                l.remove(board_state.decode_state[board_state.black_ball_index])
 
         return list(l)
 

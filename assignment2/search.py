@@ -1,3 +1,4 @@
+from collections import deque
 import numpy as np
 import queue
 from game import BoardState, GameSimulator, Rules
@@ -49,7 +50,7 @@ class GameStateProblem(Problem):
 
         TODO: You need to set self.search_alg_fnc here
         """
-        self.search_alg_fnc = None
+        self.search_alg_fnc = self.bfs
 
     def get_actions(self, state: tuple):
         """
@@ -86,28 +87,91 @@ class GameStateProblem(Problem):
         s, p = state
         k, v = action
         offset_idx = p * 6
-        return tuple((tuple( s[i] if i != offset_idx + k else v for i in range(len(s))), (p + 1) % 2))
+        return tuple((tuple(s[i] if i != offset_idx + k else v for i in range(len(s))), (p + 1) % 2))
 
-    ## TODO: Implement your search algorithm(s) here as methods of the GameStateProblem.
-    ##       You are free to specify parameters that your method may require.
-    ##       However, you must ensure that your method returns a list of (state, action) pairs, where
-    ##       the first state and action in the list correspond to the initial state and action taken from
-    ##       the initial state, and the last (s,a) pair has s as a goal state, and a=None, and the intermediate
-    ##       (s,a) pairs correspond to the sequence of states and actions taken from the initial to goal state.
-    ## NOTE: The format of state is a tuple: (encoded_state, player_idx), where encoded_state is a tuple of 12 integers
-    ##       (mirroring the contents of BoardState.state), and player_idx is 0 or 1, indicating the player that is
-    ##       moving in this state.
-    ##       The format of action is a tuple: (relative_idx, position), where relative_idx the relative index into encoded_state
-    ##       with respect to player_idx, and position is the encoded position where the piece should move to with this action.
-    ## NOTE: self.get_actions will obtain the current actions available in current game state.
-    ## NOTE: self.execute acts like the transition function.
-    ## NOTE: Remember to set self.search_alg_fnc in set_search_alg above.
-    ## 
+    # TODO: Implement your search algorithm(s) here as methods of the GameStateProblem.
+    #       You are free to specify parameters that your method may require.
+    #       However, you must ensure that your method returns a list of (state, action) pairs, where
+    #       the first state and action in the list correspond to the initial state and action taken from
+    #       the initial state, and the last (s,a) pair has s as a goal state, and a=None, and the intermediate
+    #       (s,a) pairs correspond to the sequence of states and actions taken from the initial to goal state.
+    # NOTE: The format of state is a tuple: (encoded_state, player_idx), where encoded_state is a tuple of 12 integers
+    #       (mirroring the contents of BoardState.state), and player_idx is 0 or 1, indicating the player that is
+    #       moving in this state.
+    #       The format of action is a tuple: (relative_idx, position), where relative_idx the relative index into encoded_state
+    #       with respect to player_idx, and position is the encoded position where the piece should move to with this action.
+    # NOTE: self.get_actions will obtain the current actions available in current game state.
+    # NOTE: self.execute acts like the transition function.
+    # NOTE: Remember to set self.search_alg_fnc in set_search_alg above.
+    #
     """ Here is an example:
-    
     def my_snazzy_search_algorithm(self):
         ## Some kind of search algorithm
         ## ...
         return solution ## Solution is an ordered list of (s,a)
     """
 
+    def bfs(self):
+
+        # First, we perform BFS search and record the parents of each node
+        parent, state = self.perform_bfs_search()
+
+        # Next, we make sure we have the correct goal state from th e passed in parameter
+        goal_state = self.find_goal_state(state)
+
+        # Recursively back using the and the state and then reverse it (since we start from the back)
+        result = []
+        curr = goal_state
+        while curr:
+            result.append(curr)
+            curr = parent[curr]
+        pathway = result[::-1]
+
+        # Reconstruct the actions using the states
+        result = self.backtrack(pathway)
+
+        # Append the final goal state to the result
+        result.append((goal_state, None))
+        return result
+
+    def find_goal_state(self, state):
+        for _s in self.goal_state_set:
+            if _s == state:
+                return _s
+
+        raise ValueError("Error, goal state not matching")
+
+    def perform_bfs_search(self):
+        p1_q = deque()
+        p1_q.append(self.initial_state)
+        seen = set()
+        seen.add(self.initial_state)
+        parent = {self.initial_state: None}
+
+        while True:
+            state = p1_q.popleft()
+            if self.is_goal(state):
+                break
+
+            possible_actions = self.get_actions(state)
+            for action in possible_actions:
+                new_state = self.execute(state, action)
+                if new_state not in seen:
+                    p1_q.append(new_state)
+                    seen.add(new_state)
+                    parent[new_state] = state
+        return parent, state
+
+    def backtrack(self, nodes):
+        result = []
+
+        for i in range(1, len(nodes)):
+            current_state, current_player = nodes[i]
+            previous_state, previous_player = nodes[i - 1]
+
+            for index, _ in enumerate(current_state):
+                if current_state[index] != previous_state[index]:
+                    action = (index, current_state[index])
+                    result.append(((previous_state, previous_player), action))
+
+        return result
