@@ -15,9 +15,9 @@ class TestSearch:
 
         assert sln == ref
 
-    ## NOTE: If you'd like to test multiple variants of your algorithms, enter their keys below
-    ## in the parametrize function. Your set_search_alg should then set the correct method to
-    ## use.
+    # NOTE: If you'd like to test multiple variants of your algorithms, enter their keys below
+    # in the parametrize function. Your set_search_alg should then set the correct method to
+    # use.
     @pytest.mark.parametrize("alg", ["", ""])
     def test_game_state_problem(self, alg):
         """
@@ -30,23 +30,23 @@ class TestSearch:
         gsp = GameStateProblem(b1, b2, 0)
         gsp.set_search_alg(alg)
         sln = gsp.search_alg_fnc()
-
+        #
         ## Single Step
         ref = [(tuple((tuple(b1.state), 0)), (0, 14)), (tuple((tuple(b2.state), 1)), None)]
         assert sln == ref
 
         b2 = BoardState()
         b2.update(0, 23)
-        
+
         gsp = GameStateProblem(b1, b2, 0)
         gsp.set_search_alg(alg)
         sln = gsp.search_alg_fnc()
 
         ## Two Step:
         ## (0, 14) or (0, 10) -> (any) -> (0, 23) -> (undo any) -> (None, goal state)
-
-        #print(gsp.goal_state_set)
-        #print(sln)
+        print()
+        print(gsp.goal_state_set)
+        print(sln)
         assert len(sln) == 5 ## Player 1 needs to move once, then move the piece back
         assert sln[0] == (tuple((tuple(b1.state), 0)), (0, 14)) or sln[0] == (tuple((tuple(b1.state), 0)), (0, 10))
         assert sln[1][0][1] == 1
@@ -69,6 +69,9 @@ class TestSearch:
         generated_actions = sim.generate_valid_actions(0)
         assert (0,6) not in generated_actions
         assert (4,0) not in generated_actions
+
+        generated_actions = sim.generate_valid_actions(1)
+        assert (7,0) not in generated_actions
 
     ## NOTE: You are highly encouraged to add failing test cases here
     ## in order to test your validate_action implementation. To add an
@@ -119,6 +122,11 @@ class TestSearch:
         enc = np.array([board.encode_single_pos(x) for x in board.decode_state])
         assert np.all(enc == board.state)
 
+    def test_encoded_single(self):
+        board = BoardState()
+        assert board.decode_single_pos(0) == (0, 0)
+        assert board.encode_single_pos((0,0)) == 0
+
     def test_is_valid(self):
         board = BoardState()
         assert board.is_valid()
@@ -126,15 +134,15 @@ class TestSearch:
         ## Out of bounds test
         board.update(0,-1)
         assert not board.is_valid()
-        
+
         board.update(0,0)
         assert board.is_valid()
-        
+
         ## Out of bounds test
         board.update(0,-1)
         board.update(6,56)
         assert not board.is_valid()
-        
+
         ## Overlap test
         board.update(0,0)
         board.update(6,0)
@@ -149,10 +157,21 @@ class TestSearch:
         ## Player is not holding the ball
         board.update(5,0)
         assert not board.is_valid()
-        
+
+        # Player is not holding the ball (other side)
+        board.update(11,49)
+        assert not board.is_valid()
+
         board.update(5,10)
         assert not board.is_valid()
 
+
+        board.update(11,52)
+        board.update(5,4)
+        assert board.is_valid()
+
+
+    # State, reachable, player
     @pytest.mark.parametrize("state,reachable,player", [
         (
             [
@@ -338,7 +357,7 @@ class TestSearch:
             set([(0,0),(2,0),(0,2),(2,2)]),
             0
         ),
-    ]) 
+    ])
     def test_ball_reachability(self, state, reachable, player):
         board = BoardState()
         board.state = np.array(list(board.encode_single_pos(cr) for cr in state))
