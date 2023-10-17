@@ -89,7 +89,7 @@ class GameStateProblem(Problem):
         offset_idx = p * 6
         return tuple((tuple(s[i] if i != offset_idx + k else v for i in range(len(s))), (p + 1) % 2))
 
-    # TODO: Implement your search algorithm(s) here as methods of the GameStateProblem.
+    #       Implement your search algorithm(s) here as methods of the GameStateProblem.
     #       You are free to specify parameters that your method may require.
     #       However, you must ensure that your method returns a list of (state, action) pairs, where
     #       the first state and action in the list correspond to the initial state and action taken from
@@ -104,12 +104,13 @@ class GameStateProblem(Problem):
     # NOTE: self.execute acts like the transition function.
     # NOTE: Remember to set self.search_alg_fnc in set_search_alg above.
     #
-    """ Here is an example:
-    def my_snazzy_search_algorithm(self):
-        ## Some kind of search algorithm
-        ## ...
-        return solution ## Solution is an ordered list of (s,a)
-    """
+
+    # From assignment 3:
+    # You can add multiple adversarial search algorithms to the GameStateProblem class, and then
+    # create various Player classes which use those specific algorithms.
+
+    def adversarial_search_method(self, state_tup, val_a, val_b, val_c):
+        pass
 
     def bfs(self):
 

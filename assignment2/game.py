@@ -1,6 +1,44 @@
 import numpy as np
 
 
+class Player:
+    def __init__(self, policy_fnc):
+        self.policy_fnc = policy_fnc
+
+    def policy(self, decode_state):
+        pass
+
+class PlayerAlgorithmA(Player):
+    def __init__(self, gsp, player_idx):
+        # You can customize the signature of the constructor above to suit your needs.
+        # In this example, in the above parameters, gsp is a GameStateProblem, and
+        # gsp.adversarial_search_method is a method of that class.
+
+        super().__init__(gsp.adversarial_search_method)
+        self.gsp = gsp
+        self.b = BoardState()
+        self.player_idx = player_idx
+
+    def policy(self, decode_state):
+        # Here, the policy of the player is to consider the current decoded game state
+        # and then correctly encode it and provide any additional required parameters to the
+        # assigned policy_fnc (which in this case is gsp.adversarial_search_method), and then
+        # return the result of self.policy_fnc
+
+        encoded_state_tup = tuple(self.b.encode_single_pos(s) for s in decode_state)
+        state_tup = tuple((encoded_state_tup, self.player_idx))
+        val_a, val_b, val_c = (1, 2, 3)
+        return self.policy_fnc(state_tup, val_a, val_b, val_c)
+
+
+class AdversarialSearchPlayer(Player):
+    def __init__(self, gsp, player_idx):
+        pass
+
+    def policy(self, decode_state):
+        pass
+
+
 class BoardState:
     """
     Represents a state in the game
@@ -361,7 +399,6 @@ class GameSimulator:
         else:
             raise ValueError(
                 "For each case that an action is not valid, specify the reason that the action is not valid in this ValueError.")
-
 
     def update(self, action: tuple, player_idx: int):
         """
