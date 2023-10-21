@@ -1,3 +1,4 @@
+import heapq
 from collections import deque
 import numpy as np
 import queue
@@ -109,8 +110,40 @@ class GameStateProblem(Problem):
     # You can add multiple adversarial search algorithms to the GameStateProblem class, and then
     # create various Player classes which use those specific algorithms.
 
-    def adversarial_search_method(self, state_tup, val_a, val_b, val_c):
-        pass
+    def adversarial_search_method(self, state_tup, board_state, player_idx, val_c):
+        p1_q = deque()
+        p1_q.append(self.initial_state)
+        seen = set()
+        seen.add(self.initial_state)
+        parent = {self.initial_state: None}
+        heap = []
+
+        while True:
+            state = p1_q.popleft()
+            possible_actions = self.get_actions(state)
+            for action in possible_actions:
+                new_state = self.execute(state, action)
+                # We should determine heuristic here...
+                last_ball_loc = state[0][(player_idx * 5) + 5]
+                next_ball_loc = new_state[0][(player_idx * 5) + 5]
+
+                last_ball_loc //= 8
+                next_ball_loc //= 8
+
+                h = 7
+
+                if player_idx == 0:
+                    # We want to get closer to the "top" of the board, in other words current - last == 0
+                    h = 7 - next_ball_loc
+                else:
+                    h = next_ball_loc
+
+                heap.append((h, action))
+            break
+
+        heapq.heapify(heap)
+        smallest = [x[1] for x in heapq.nsmallest(5,heap)]
+        return smallest[0], None
 
     def bfs(self):
 

@@ -8,7 +8,8 @@ class Player:
     def policy(self, decode_state):
         pass
 
-class PlayerAlgorithmA(Player):
+
+class AdversarialSearchPlayer(Player):
     def __init__(self, gsp, player_idx):
         # You can customize the signature of the constructor above to suit your needs.
         # In this example, in the above parameters, gsp is a GameStateProblem, and
@@ -28,15 +29,7 @@ class PlayerAlgorithmA(Player):
         encoded_state_tup = tuple(self.b.encode_single_pos(s) for s in decode_state)
         state_tup = tuple((encoded_state_tup, self.player_idx))
         val_a, val_b, val_c = (1, 2, 3)
-        return self.policy_fnc(state_tup, val_a, val_b, val_c)
-
-
-class AdversarialSearchPlayer(Player):
-    def __init__(self, gsp, player_idx):
-        pass
-
-    def policy(self, decode_state):
-        pass
+        return self.policy_fnc(state_tup, self.b, self.player_idx, val_c)
 
 
 class BoardState:
@@ -322,9 +315,11 @@ class GameSimulator:
         Runs a game simulation
         """
         while not self.game_state.is_termination_state():
+
             ## Determine the round number, and the player who needs to move
             self.current_round += 1
             player_idx = self.current_round % 2
+
             ## For the player who needs to move, provide them with the current game state
             ## and then ask them to choose an action according to their policy
             action, value = self.players[player_idx].policy(self.game_state.make_state())

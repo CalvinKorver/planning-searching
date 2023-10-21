@@ -1,12 +1,12 @@
 import numpy as np
 import pytest
 
-from game import BoardState, GameSimulator, PlayerAlgorithmA, PlayerAlgorithmB
+from game import BoardState, GameSimulator, AdversarialSearchPlayer
 from search import GameStateProblem
 
 
 @pytest.mark.parametrize("p1_class,p2_class,encoded_state_tuple,exp_winner,exp_stat", [
-    (PlayerAlgorithmA, PlayerAlgorithmA,
+    (AdversarialSearchPlayer, AdversarialSearchPlayer,
      (49, 37, 46, 41, 55, 41, 50, 51, 52, 53, 54, 52),
      "WHITE", "No issues")
 ])
