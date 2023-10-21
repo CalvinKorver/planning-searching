@@ -51,7 +51,7 @@ class GameStateProblem(Problem):
 
         TODO: You need to set self.search_alg_fnc here
         """
-        self.search_alg_fnc = self.bfs
+        self.search_alg_fnc = self.adversarial_search_method
 
     def get_actions(self, state: tuple):
         """
@@ -111,101 +111,100 @@ class GameStateProblem(Problem):
     # create various Player classes which use those specific algorithms.
 
     def adversarial_search_method(self, state_tup, board_state, player_idx, val_c):
-        p1_q = deque()
-        p1_q.append(self.initial_state)
-        seen = set()
-        seen.add(self.initial_state)
-        parent = {self.initial_state: None}
+
         heap = []
-
-        while True:
-            state = p1_q.popleft()
-            possible_actions = self.get_actions(state)
-            for action in possible_actions:
-                new_state = self.execute(state, action)
-                # We should determine heuristic here...
-                last_ball_loc = state[0][(player_idx * 5) + 5]
-                next_ball_loc = new_state[0][(player_idx * 5) + 5]
-
-                last_ball_loc //= 8
-                next_ball_loc //= 8
-
-                h = 7
-
-                if player_idx == 0:
-                    # We want to get closer to the "top" of the board, in other words current - last == 0
-                    h = 7 - next_ball_loc
-                else:
-                    h = next_ball_loc
-
-                heap.append((h, action))
-            break
+        possible_actions = self.get_actions(state_tup)
+        for action in possible_actions:
+            new_state = self.execute(state_tup, action)
+            h = self.calc_h(new_state, state_tup)
+            # h = 0
+            # Short circuit if we have an action that immediately wins the game
+            if board_state.is_termination_state_for_player(new_state[0], player_idx):
+                print()
+                print()
+                print("Short circuited on the 1st action of the game.")
+                print('Action:', action)
+                print()
+                return action, None
+            heap.append((h, ActionNode(action, state_tup)))
 
         heapq.heapify(heap)
-        smallest = [x[1] for x in heapq.nsmallest(5,heap)]
-        return smallest[0], None
+        # heap = heapq.nsmallest(5,heap)
 
-    def bfs(self):
+        # Let player 2 "go" now
+        player_idx = 1 if state_tup[1] == 0 else 0
+        player_2_heap = []
+        for _, node in heap:
+            state = self.execute(node.state, node.action)
+            player_2_poss_actions = self.get_actions(state)
+            for action in player_2_poss_actions:
+                state_after_player_2_action = self.execute(state, action)
+                h = self.calc_h(state_after_player_2_action, state)
 
-        # First, we perform BFS search and record the parents of each node
-        parent, state = self.perform_bfs_search()
+                # if board_state.is_termination_state_for_player(state_after_player_2_action[0], player_idx):
+                #     print()
+                #     print()
+                #     print("Found terminating move for other player")
+                #     # print('Action:', action)
+                #     print()
 
-        # Next, we make sure we have the correct goal state from th e passed in parameter
-        goal_state = self.find_goal_state(state)
+                player_2_node = ActionNode(action, state)
+                player_2_node.setParent(node)
+                player_2_heap.append((h, player_2_node))
 
-        # Recursively back using the and the state and then reverse it (since we start from the back)
-        result = []
-        curr = goal_state
-        while curr:
-            result.append(curr)
-            curr = parent[curr]
-        pathway = result[::-1]
+        heapq.heapify(player_2_heap)
 
-        # Reconstruct the actions using the states
-        result = self.backtrack(pathway)
+        player_1_heap = []
+        for _, node in player_2_heap:
+            state = self.execute(node.state, node.action)
+            player_1_actions = self.get_actions(state)
+            for action in player_1_actions:
+                new_state = self.execute(state,action)
+                h = self.calc_h(new_state,state)
+                player_1_node = ActionNode(action,new_state)
+                player_1_node.setParent(node)
+                player_1_heap.append((h, player_1_node))
 
-        # Append the final goal state to the result
-        result.append((goal_state, None))
-        return result
+        heapq.heapify(player_1_heap)
+        smallest = [x[1] for x in heapq.nsmallest(5,player_1_heap)]
+        smallest_node = smallest[0]
 
-    def find_goal_state(self, state):
-        for _s in self.goal_state_set:
-            if _s == state:
-                return _s
+        while smallest_node.getParent():
+            smallest_node = smallest_node.getParent()
 
-        raise ValueError("Error, goal state not matching")
+        return smallest_node.action, None
 
-    def perform_bfs_search(self):
-        p1_q = deque()
-        p1_q.append(self.initial_state)
-        seen = set()
-        seen.add(self.initial_state)
-        parent = {self.initial_state: None}
+    def calc_h(self, new_state, last_state):
+        player_idx = last_state[1]
+        last_ball_loc = last_state[0][(player_idx * 5) + 5]
+        next_ball_loc = new_state[0][(player_idx * 5) + 5]
+        last_ball_loc //= 8
+        next_ball_loc //= 8
+        h = 7
+        if player_idx == 0:
+            # We want to get closer to the "top" of the board, in other words current - last == 0
+            h = 7 - next_ball_loc
+        else:
+            h = next_ball_loc
+        return h
 
-        while True:
-            state = p1_q.popleft()
-            if self.is_goal(state):
-                break
 
-            possible_actions = self.get_actions(state)
-            for action in possible_actions:
-                new_state = self.execute(state, action)
-                if new_state not in seen:
-                    p1_q.append(new_state)
-                    seen.add(new_state)
-                    parent[new_state] = state
-        return parent, state
+class ActionNode():
+    def __init__(self, action, state):
+        self.state = state
+        self.action = action # action is a tuple (x,y)
+        self.parent = None
+    def getParent(self):
+        return self.parent
 
-    def backtrack(self, nodes):
-        result = []
+    def setParent(self, parent):
+        self.parent = parent
 
-        for i in range(1, len(nodes)):
-            current_state, current_player = nodes[i]
-            previous_state, previous_player = nodes[i - 1]
+    def __eq__(self, other):
+        return True
 
-            for index, _ in enumerate(current_state):
-                if current_state[index] != previous_state[index]:
-                    action = (index, current_state[index])
-                    result.append(((previous_state, previous_player), action))
+    def __lt__(self, other):
+        return True
 
-        return result
+    def __gt__(self, other):
+        return True

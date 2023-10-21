@@ -102,6 +102,17 @@ class BoardState:
             return 49 <= self.state[self.white_ball_index] <= self.MAX or self.MIN <= self.state[
                 self.black_ball_index] <= 6
 
+    def is_termination_state_for_player(self, state, player_idx):
+        if not self.is_valid():
+            return False
+        else:
+            if player_idx == 0:
+                return 49 <= state[self.white_ball_index] <= self.MAX
+            else:
+                return self.MIN <= state[self.black_ball_index] <= 6
+
+
+
     def is_valid(self):
         """
         Checks if a board configuration is valid. This function checks whether the current
