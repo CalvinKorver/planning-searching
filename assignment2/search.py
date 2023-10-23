@@ -1,7 +1,9 @@
+import heapq
 from collections import deque
 import numpy as np
 import queue
 from game import BoardState, GameSimulator, Rules
+
 
 class Problem:
 
@@ -27,6 +29,7 @@ class Problem:
         """
         return state in self.goal_state_set
 
+
 class GameStateProblem(Problem):
 
     def __init__(self, initial_board_state, goal_board_state, player_idx):
@@ -36,7 +39,8 @@ class GameStateProblem(Problem):
         The form of initial state is:
         ((game board state tuple), player_idx ) <--- indicates state of board and who's turn it is to move
         """
-        super().__init__(tuple((tuple(initial_board_state.state), player_idx)), set([tuple((tuple(goal_board_state.state), 0)), tuple((tuple(goal_board_state.state), 1))]))
+        super().__init__(tuple((tuple(initial_board_state.state), player_idx)),
+                         set([tuple((tuple(goal_board_state.state), 0)), tuple((tuple(goal_board_state.state), 1))]))
         self.sim = GameSimulator(None)
         self.search_alg_fnc = None
         self.set_search_alg()
@@ -50,7 +54,7 @@ class GameStateProblem(Problem):
 
         TODO: You need to set self.search_alg_fnc here
         """
-        self.search_alg_fnc = self.bfs
+        self.search_alg_fnc = self.adversarial_search_method
 
     def get_actions(self, state: tuple):
         """
@@ -89,7 +93,7 @@ class GameStateProblem(Problem):
         offset_idx = p * 6
         return tuple((tuple(s[i] if i != offset_idx + k else v for i in range(len(s))), (p + 1) % 2))
 
-    # TODO: Implement your search algorithm(s) here as methods of the GameStateProblem.
+    #       Implement your search algorithm(s) here as methods of the GameStateProblem.
     #       You are free to specify parameters that your method may require.
     #       However, you must ensure that your method returns a list of (state, action) pairs, where
     #       the first state and action in the list correspond to the initial state and action taken from
@@ -104,74 +108,126 @@ class GameStateProblem(Problem):
     # NOTE: self.execute acts like the transition function.
     # NOTE: Remember to set self.search_alg_fnc in set_search_alg above.
     #
-    """ Here is an example:
-    def my_snazzy_search_algorithm(self):
-        ## Some kind of search algorithm
-        ## ...
-        return solution ## Solution is an ordered list of (s,a)
-    """
 
-    def bfs(self):
+    # From assignment 3:
+    # You can add multiple adversarial search algorithms to the GameStateProblem class, and then
+    # create various Player classes which use those specific algorithms.
 
-        # First, we perform BFS search and record the parents of each node
-        parent, state = self.perform_bfs_search()
 
-        # Next, we make sure we have the correct goal state from th e passed in parameter
-        goal_state = self.find_goal_state(state)
+    def adversarial_search_method(self, state_tup, board_state, player_idx, plies):
+        plies = 3
+        possible_actions = self.get_actions(state_tup)
+        maximum = float('-inf')
+        maximumAction = None
+        prev_actions_h = []
+        for action in possible_actions:
+            piece_to_move = state_tup[0][action[0] + (player_idx * 6)]
+            state_tuple = self.execute(state_tup, action)
+            board_state, next_player_idx = create_next_board(state_tuple)
+            val = self.determine_max(board_state, next_player_idx, 1, plies)
+            if val > maximum:
+                maximum = val
+                maximumAction = action
 
-        # Recursively back using the and the state and then reverse it (since we start from the back)
-        result = []
-        curr = goal_state
-        while curr:
-            result.append(curr)
-            curr = parent[curr]
-        pathway = result[::-1]
+            prev_actions_h.append((val, piece_to_move,action[1]))
+        # reversed = True if player_idx == 0 else False
+        reversed = True
+        prev_actions = sorted(prev_actions_h, key=lambda x: x[0], reverse=reversed)
+        print()
+        print(prev_actions[:7])
+        print()
+        return maximumAction, maximum
 
-        # Reconstruct the actions using the states
-        result = self.backtrack(pathway)
 
-        # Append the final goal state to the result
-        result.append((goal_state, None))
-        return result
+    def determine_max(self, board_state, player_idx, current_plie, total_plies):
+        if self.minimax_term_conditions(board_state, current_plie, total_plies):
+            return calc_h(board_state, player_idx, True)
 
-    def find_goal_state(self, state):
-        for _s in self.goal_state_set:
-            if _s == state:
-                return _s
+        current_plie += 1
+        actions = self.get_actions((board_state.state, player_idx))
+        maximum = float('-inf')
+        for action in actions:
+            new_state = self.execute((board_state.state, player_idx), action)
+            next_board_state, next_player_idx = create_next_board(new_state)
+            val = self.determine_min(next_board_state, next_player_idx, current_plie, total_plies)
+            if val > maximum:
+                maximum = val
+        return maximum
 
-        raise ValueError("Error, goal state not matching")
+    def determine_min(self, board_state, player_idx, current_plie, total_plies):
+        if self.minimax_term_conditions(board_state, current_plie, total_plies):
+            return calc_h(board_state, player_idx, False)
 
-    def perform_bfs_search(self):
-        p1_q = deque()
-        p1_q.append(self.initial_state)
-        seen = set()
-        seen.add(self.initial_state)
-        parent = {self.initial_state: None}
+        current_plie += 1
+        actions = self.get_actions((board_state.state, player_idx))
+        minimum = float('inf')
+        for action in actions:
+            new_state = self.execute((board_state.state, player_idx), action)
+            next_board_state, next_player_idx = create_next_board(new_state)
+            val = self.determine_max(next_board_state, next_player_idx, current_plie, total_plies)
+            if val < minimum:
+                minimum = val
+        return minimum
 
-        while True:
-            state = p1_q.popleft()
-            if self.is_goal(state):
-                break
+    def minimax_term_conditions(self, board_state, current_plie, total_plies):
+        return current_plie == total_plies or board_state.is_termination_state()
 
-            possible_actions = self.get_actions(state)
-            for action in possible_actions:
-                new_state = self.execute(state, action)
-                if new_state not in seen:
-                    p1_q.append(new_state)
-                    seen.add(new_state)
-                    parent[new_state] = state
-        return parent, state
 
-    def backtrack(self, nodes):
-        result = []
-g
-        for i in range(1, len(nodes)):
-            current_state, current_player = nodes[i]
-            previous_state, previous_player = nodes[i - 1]
+    # This should return a value in the range of [-7 to 7] depending on
+    # how close the player is to winning. If the move is perfect for white, it should
+    # return 1. If the move is the worst for white it should return -1
+    # For example, if player==0 and was 0 rows from winning and player1 was 1 rows,
+    # we could do (next_ball_loc / 7) - ((7 - enemy_ball_loc) / 7) / 2
+def calc_h(board_state, player_idx, is_max):
+    new_state = board_state.state
 
-            for index, _ in enumerate(current_state):
-                if current_state[index] != previous_state[index]:
-                    action = (index, current_state[index])
-                    result.append(((previous_state, previous_player), action))
+    white_ball_row = new_state[5] // 7
+    black_ball_row = new_state[11] // 7
 
-        return result
+    white_score = 0
+    black_score = 0
+
+    # Calculate heuristic for the white and black players, how close the pieces are getting to the other side
+    white_score = np.mean([val // 7 for val in new_state[:5]])
+    black_score = 7 - np.mean([(val // 7) for val in new_state[6:11]])
+
+    for val in new_state[:5]:
+        if val // 7 == 7:
+            white_score += 7
+
+    for val in new_state[6:11]:
+        if val // 7 == 0:
+            black_score += 7
+
+    if white_ball_row == 7:
+        white_score += 20
+
+    if black_ball_row == 0:
+        black_score += 20
+
+    score = round(white_score, 3) if player_idx == 1 else round(black_score, 3)
+
+    return score if is_max else -score # For calls from minimum, we'd like to return the negative since we are
+    # trying to minimize the value
+    # return round(white_score - black_score, 3)
+
+    # white_win = white_ball_row == 7
+    # black_win = black_ball_row == 0
+    #
+    # if white_win and black_win:
+    #     return 0
+    # elif white_win:
+    #     return 7
+    # elif black_win:
+    #     return -7
+    # else:
+    #     return round(white_ball_row - (7 - black_ball_row))
+
+def create_next_board(state_and_plx):
+    state, plx = state_and_plx
+    b = BoardState()
+    b.state = np.array(state)
+    b.decode_state = b.make_state()
+    # next_plx = 0 if plx == 1 else 0
+    next_plx = plx
+    return b, next_plx

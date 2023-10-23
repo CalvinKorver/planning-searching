@@ -1,6 +1,37 @@
 import numpy as np
 
 
+class Player:
+    def __init__(self, policy_fnc):
+        self.policy_fnc = policy_fnc
+
+    def policy(self, decode_state):
+        pass
+
+
+class AdversarialSearchPlayer(Player):
+    def __init__(self, gsp, player_idx):
+        # You can customize the signature of the constructor above to suit your needs.
+        # In this example, in the above parameters, gsp is a GameStateProblem, and
+        # gsp.adversarial_search_method is a method of that class.
+
+        super().__init__(gsp.adversarial_search_method)
+        self.gsp = gsp
+        self.b = BoardState()
+        self.player_idx = player_idx
+
+    def policy(self, decode_state):
+        # Here, the policy of the player is to consider the current decoded game state
+        # and then correctly encode it and provide any additional required parameters to the
+        # assigned policy_fnc (which in this case is gsp.adversarial_search_method), and then
+        # return the result of self.policy_fnc
+
+        encoded_state_tup = tuple(self.b.encode_single_pos(s) for s in decode_state)
+        state_tup = tuple((encoded_state_tup, self.player_idx))
+        val_a, val_b, val_c = (1, 2, 3)
+        return self.policy_fnc(state_tup, None, self.player_idx, val_c)
+
+
 class BoardState:
     """
     Represents a state in the game
@@ -70,6 +101,17 @@ class BoardState:
         else:
             return 49 <= self.state[self.white_ball_index] <= self.MAX or self.MIN <= self.state[
                 self.black_ball_index] <= 6
+
+    def is_termination_state_for_player(self, state, player_idx):
+        if not self.is_valid():
+            return False
+        else:
+            if player_idx == 0:
+                return 49 <= state[self.white_ball_index] <= self.MAX
+            else:
+                return self.MIN <= state[self.black_ball_index] <= 6
+
+
 
     def is_valid(self):
         """
@@ -284,9 +326,11 @@ class GameSimulator:
         Runs a game simulation
         """
         while not self.game_state.is_termination_state():
+
             ## Determine the round number, and the player who needs to move
             self.current_round += 1
             player_idx = self.current_round % 2
+
             ## For the player who needs to move, provide them with the current game state
             ## and then ask them to choose an action according to their policy
             action, value = self.players[player_idx].policy(self.game_state.make_state())
@@ -361,7 +405,6 @@ class GameSimulator:
         else:
             raise ValueError(
                 "For each case that an action is not valid, specify the reason that the action is not valid in this ValueError.")
-
 
     def update(self, action: tuple, player_idx: int):
         """
