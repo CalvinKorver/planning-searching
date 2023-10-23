@@ -4,6 +4,7 @@ import numpy as np
 import queue
 from game import BoardState, GameSimulator, Rules
 
+
 class Problem:
 
     def __init__(self, initial_state, goal_state_set: set):
@@ -28,6 +29,7 @@ class Problem:
         """
         return state in self.goal_state_set
 
+
 class GameStateProblem(Problem):
 
     def __init__(self, initial_board_state, goal_board_state, player_idx):
@@ -37,7 +39,8 @@ class GameStateProblem(Problem):
         The form of initial state is:
         ((game board state tuple), player_idx ) <--- indicates state of board and who's turn it is to move
         """
-        super().__init__(tuple((tuple(initial_board_state.state), player_idx)), set([tuple((tuple(goal_board_state.state), 0)), tuple((tuple(goal_board_state.state), 1))]))
+        super().__init__(tuple((tuple(initial_board_state.state), player_idx)),
+                         set([tuple((tuple(goal_board_state.state), 0)), tuple((tuple(goal_board_state.state), 1))]))
         self.sim = GameSimulator(None)
         self.search_alg_fnc = None
         self.set_search_alg()
@@ -110,101 +113,121 @@ class GameStateProblem(Problem):
     # You can add multiple adversarial search algorithms to the GameStateProblem class, and then
     # create various Player classes which use those specific algorithms.
 
-    def adversarial_search_method(self, state_tup, board_state, player_idx, val_c):
 
-        heap = []
+    def adversarial_search_method(self, state_tup, board_state, player_idx, plies):
+        plies = 3
         possible_actions = self.get_actions(state_tup)
+        maximum = float('-inf')
+        maximumAction = None
+        prev_actions_h = []
         for action in possible_actions:
-            new_state = self.execute(state_tup, action)
-            h = self.calc_h(new_state, state_tup)
-            # h = 0
-            # Short circuit if we have an action that immediately wins the game
-            if board_state.is_termination_state_for_player(new_state[0], player_idx):
-                print()
-                print()
-                print("Short circuited on the 1st action of the game.")
-                print('Action:', action)
-                print()
-                return action, None
-            heap.append((h, ActionNode(action, state_tup)))
+            piece_to_move = state_tup[0][action[0] + (player_idx * 6)]
+            state_tuple = self.execute(state_tup, action)
+            board_state, next_player_idx = create_next_board(state_tuple)
+            val = self.determine_max(board_state, next_player_idx, 1, plies)
+            if val > maximum:
+                maximum = val
+                maximumAction = action
 
-        heapq.heapify(heap)
-        # heap = heapq.nsmallest(5,heap)
-
-        # Let player 2 "go" now
-        player_idx = 1 if state_tup[1] == 0 else 0
-        player_2_heap = []
-        for _, node in heap:
-            state = self.execute(node.state, node.action)
-            player_2_poss_actions = self.get_actions(state)
-            for action in player_2_poss_actions:
-                state_after_player_2_action = self.execute(state, action)
-                h = self.calc_h(state_after_player_2_action, state)
-
-                # if board_state.is_termination_state_for_player(state_after_player_2_action[0], player_idx):
-                #     print()
-                #     print()
-                #     print("Found terminating move for other player")
-                #     # print('Action:', action)
-                #     print()
-
-                player_2_node = ActionNode(action, state)
-                player_2_node.setParent(node)
-                player_2_heap.append((h, player_2_node))
-
-        heapq.heapify(player_2_heap)
-
-        player_1_heap = []
-        for _, node in player_2_heap:
-            state = self.execute(node.state, node.action)
-            player_1_actions = self.get_actions(state)
-            for action in player_1_actions:
-                new_state = self.execute(state,action)
-                h = self.calc_h(new_state,state)
-                player_1_node = ActionNode(action,new_state)
-                player_1_node.setParent(node)
-                player_1_heap.append((h, player_1_node))
-
-        heapq.heapify(player_1_heap)
-        smallest = [x[1] for x in heapq.nsmallest(5,player_1_heap)]
-        smallest_node = smallest[0]
-
-        while smallest_node.getParent():
-            smallest_node = smallest_node.getParent()
-
-        return smallest_node.action, None
-
-    def calc_h(self, new_state, last_state):
-        player_idx = last_state[1]
-        last_ball_loc = last_state[0][(player_idx * 5) + 5]
-        next_ball_loc = new_state[0][(player_idx * 5) + 5]
-        last_ball_loc //= 8
-        next_ball_loc //= 8
-        h = 7
-        if player_idx == 0:
-            # We want to get closer to the "top" of the board, in other words current - last == 0
-            h = 7 - next_ball_loc
-        else:
-            h = next_ball_loc
-        return h
+            prev_actions_h.append((val, piece_to_move,action[1]))
+        # reversed = True if player_idx == 0 else False
+        reversed = True
+        prev_actions = sorted(prev_actions_h, key=lambda x: x[0], reverse=reversed)
+        print()
+        print(prev_actions[:7])
+        print()
+        return maximumAction, maximum
 
 
-class ActionNode():
-    def __init__(self, action, state):
-        self.state = state
-        self.action = action # action is a tuple (x,y)
-        self.parent = None
-    def getParent(self):
-        return self.parent
+    def determine_max(self, board_state, player_idx, current_plie, total_plies):
+        if self.minimax_term_conditions(board_state, current_plie, total_plies):
+            return calc_h(board_state, player_idx, True)
 
-    def setParent(self, parent):
-        self.parent = parent
+        current_plie += 1
+        actions = self.get_actions((board_state.state, player_idx))
+        maximum = float('-inf')
+        for action in actions:
+            new_state = self.execute((board_state.state, player_idx), action)
+            next_board_state, next_player_idx = create_next_board(new_state)
+            val = self.determine_min(next_board_state, next_player_idx, current_plie, total_plies)
+            if val > maximum:
+                maximum = val
+        return maximum
 
-    def __eq__(self, other):
-        return True
+    def determine_min(self, board_state, player_idx, current_plie, total_plies):
+        if self.minimax_term_conditions(board_state, current_plie, total_plies):
+            return calc_h(board_state, player_idx, False)
 
-    def __lt__(self, other):
-        return True
+        current_plie += 1
+        actions = self.get_actions((board_state.state, player_idx))
+        minimum = float('inf')
+        for action in actions:
+            new_state = self.execute((board_state.state, player_idx), action)
+            next_board_state, next_player_idx = create_next_board(new_state)
+            val = self.determine_max(next_board_state, next_player_idx, current_plie, total_plies)
+            if val < minimum:
+                minimum = val
+        return minimum
 
-    def __gt__(self, other):
-        return True
+    def minimax_term_conditions(self, board_state, current_plie, total_plies):
+        return current_plie == total_plies or board_state.is_termination_state()
+
+
+    # This should return a value in the range of [-7 to 7] depending on
+    # how close the player is to winning. If the move is perfect for white, it should
+    # return 1. If the move is the worst for white it should return -1
+    # For example, if player==0 and was 0 rows from winning and player1 was 1 rows,
+    # we could do (next_ball_loc / 7) - ((7 - enemy_ball_loc) / 7) / 2
+def calc_h(board_state, player_idx, is_max):
+    new_state = board_state.state
+
+    white_ball_row = new_state[5] // 7
+    black_ball_row = new_state[11] // 7
+
+    white_score = 0
+    black_score = 0
+
+    # Calculate heuristic for the white and black players, how close the pieces are getting to the other side
+    white_score = np.mean([val // 7 for val in new_state[:5]])
+    black_score = 7 - np.mean([(val // 7) for val in new_state[6:11]])
+
+    for val in new_state[:5]:
+        if val // 7 == 7:
+            white_score += 7
+
+    for val in new_state[6:11]:
+        if val // 7 == 0:
+            black_score += 7
+
+    if white_ball_row == 7:
+        white_score += 20
+
+    if black_ball_row == 0:
+        black_score += 20
+
+    score = round(white_score, 3) if player_idx == 1 else round(black_score, 3)
+
+    return score if is_max else -score # For calls from minimum, we'd like to return the negative since we are
+    # trying to minimize the value
+    # return round(white_score - black_score, 3)
+
+    # white_win = white_ball_row == 7
+    # black_win = black_ball_row == 0
+    #
+    # if white_win and black_win:
+    #     return 0
+    # elif white_win:
+    #     return 7
+    # elif black_win:
+    #     return -7
+    # else:
+    #     return round(white_ball_row - (7 - black_ball_row))
+
+def create_next_board(state_and_plx):
+    state, plx = state_and_plx
+    b = BoardState()
+    b.state = np.array(state)
+    b.decode_state = b.make_state()
+    # next_plx = 0 if plx == 1 else 0
+    next_plx = plx
+    return b, next_plx

@@ -29,7 +29,7 @@ class AdversarialSearchPlayer(Player):
         encoded_state_tup = tuple(self.b.encode_single_pos(s) for s in decode_state)
         state_tup = tuple((encoded_state_tup, self.player_idx))
         val_a, val_b, val_c = (1, 2, 3)
-        return self.policy_fnc(state_tup, self.b, self.player_idx, val_c)
+        return self.policy_fnc(state_tup, None, self.player_idx, val_c)
 
 
 class BoardState:
